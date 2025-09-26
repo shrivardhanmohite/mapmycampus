@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home - Revolving Building Cards</title>
+  <link rel="stylesheet" href="/public/style.css" />
+  <style>
+  :root { --sidebar-width: 380px; }
+    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    #home { display: flex; min-height: 100vh; }
+
+    /* Left fixed sidebar */
+    .building-sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: linear-gradient(180deg,#ffffff 0%, #fbfbfb 100%);
+      border-right: 1px solid #e6e6e6;
+      padding: 22px 10px;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+      overflow: visible; /* allow cards to extend without getting clipped */
+      z-index: 1100; /* keep sidebar/cards above main content */
+    }
+
+    .building-sidebar h2 {
+      font-size: 1.05rem;
+      margin: 6px 0 14px 18px;
+      color: #2e3d2f;
+      font-weight: 700;
+    }
+
+    /* container for absolutely positioned cards */
+    .building-list {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 80px);
+      pointer-events: none; /* display-only container; individual cards can opt-in */
+    }
+
+    .building-card {
+      position: absolute;
+      left: 0;
+      width: 240px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: linear-gradient(180deg,#ffffff,#f7f7f7);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      transform-origin: center center;
+      transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 180ms ease;
+      cursor: default;
+      pointer-events: auto; /* allow hovering/clicking on cards */
+    }
+
+    .building-title { font-weight: 700; color: #243423; margin-bottom: 6px; }
+    .building-card small { color: #6b6b6b; display:block; margin-bottom:8px; }
+
+    /* main page content sits to the right of the fixed sidebar */
+  #home-content { margin-left: calc(var(--sidebar-width) + 28px); flex: 1; padding: 40px; }
+
+    /* visual hint for keyboard control */
+    .keyboard-hint {
+      font-size: 0.9rem;
+      color: #666;
+      margin: 10px 18px 0 18px;
+    }
+
+    @media (max-width: 800px) {
+      :root { --sidebar-width: 240px; }
+      .building-card { width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <main id="home">
+    <aside class="building-sidebar" id="sidebar" aria-label="Buildings carousel">
+      <h2>Campus Buildings</h2>
+      <div class="keyboard-hint">Use ↑ / ↓ to rotate</div>
+      <div class="building-list" id="buildingList">
+        <div class="building-card" data-lat="28.6145" data-lng="77.2080">
+          <div class="building-title">Examination Center</div>
+          <small>Block C</small>
+          <button class="directions">Get Directions</button>
+        </div>
+        <div class="building-card" data-lat="28.6130" data-lng="77.2100">
+          <div class="building-title">University Auditorium</div>
+          <small>Main Hall</small>
+          <button class="directions">Get Directions</button>
+        </div>
+        <div class="building-card" data-lat="28.6150" data-lng="77.2070">
+          <div class="building-title">Cafeteria - Block A</div>
+          <small>Food Court</small>
+          <button class="directions" onclick="getRoute(16.68099615149285, 74.25453262613264)" >Get Directions</button>
+        </div>
+        <div class="building-card" data-lat="28.6125" data-lng="77.2095">
+          <div class="building-title">Administrative Block</div>
+          <small>Admin Offices</small>
+          <button class="directions">Get Directions</button>
+        </div>
+        <div class="building-card" data-lat="28.6120" data-lng="77.2093">
+          <div class="building-title">School of Engineering</div>
+          <small>B.Tech &amp; Labs</small>
+          <button class="directions">Get Directions</button>
+        </div>
+      </div>
+    </aside>
+
+    <section id="home-content">
+      <h1>Welcome to Shivaji University</h1>
+      <p>Left side shows a vertical semicircular carousel of buildings. It rotates only when you press the Up or Down arrow keys.</p>
+    </section>
+  </main>
+
+  <script>
+    // Vertical semicircle carousel - keyboard controlled only (ArrowUp / ArrowDown)
+    (function () {
+      const container = document.getElementById('buildingList');
+      const cards = Array.from(container.querySelectorAll('.building-card'));
+      const n = cards.length;
+      const step = n > 1 ? 180 / (n - 1) : 180; // degrees between cards on semicircle
+
+  let offset = 0;
+  let target = 0;
+  const radiusFactor = 0.42;
+  // auto-rotate when idle (degrees per second)
+  let idleSpinSpeed = 6 / 60; // 6 degrees per minute -> very slow (deg/sec)
+  let lastInteraction = Date.now();
+
+      function normalizeAngle(a) {
+        while (a <= -180) a += 360;
+        while (a > 180) a -= 360;
+        return a;
+      }
+
+      function position() {
+    const rect = container.getBoundingClientRect();
+    const centerY = rect.height / 2;
+    // place semicircle center a bit inside the sidebar so cards don't overlap main content
+    const sidebarWidth = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')) || 360;
+    const cardW = parseFloat(getComputedStyle(cards[0]).width) || 240;
+    const centerX = Math.max(36, sidebarWidth * 0.28); // X origin inside sidebar
+    const radius = Math.min(rect.height * radiusFactor, sidebarWidth - centerX - 12);
+
+    cards.forEach((card, i) => {
+          const base = -90 + i * step;
+          const angle = normalizeAngle(base + offset);
+          const rad = (angle * Math.PI) / 180;
+
+          const x = Math.cos(rad) * radius;
+          const y = Math.sin(rad) * radius;
+
+          const dist = Math.abs(normalizeAngle(angle));
+          const t = Math.max(0, 1 - dist / 90);
+
+          const scale = 0.95 + t * 0.2;
+          const opacity = 0.45 + t * 0.55;
+          const z = Math.round(1000 * t);
+
+            const leftBase = centerX;
+            let left = leftBase + x;
+            // clamp left so the card stays inside sidebar bounds (with a small padding)
+            const minLeft = 12;
+            const maxLeft = sidebarWidth - (cardW * 0.5) - 12;
+            left = Math.max(minLeft, Math.min(maxLeft, left));
+          const top = centerY + y;
+
+          card.style.left = `${left}px`;
+          card.style.top = `${top}px`;
+          card.style.transform = `translate(-50%, -50%) scale(${scale})`;
+          card.style.opacity = opacity.toFixed(2);
+          card.style.zIndex = 100 + z;
+        });
+      }
+
+      function loop() {
+        const ease = 0.18;
+        const delta = target - offset;
+        if (Math.abs(delta) > 0.001) {
+          offset += delta * ease;
+          if (Math.abs(target - offset) < 0.01) offset = target;
+          position();
+        } else {
+          // if user has been idle for >1.5s, apply a very slow auto-rotation
+          if (Date.now() - lastInteraction > 1500) {
+            offset += idleSpinSpeed; // continuous slow drift
+            position();
+          }
+        }
+        requestAnimationFrame(loop);
+      }
+
+      function onKey(e) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          target -= step;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          target += step;
+        } else {
+          return;
+        }
+        lastInteraction = Date.now();
+      }
+
+      window.addEventListener('resize', position);
+      window.addEventListener('load', () => { position(); loop(); });
+      window.addEventListener('keydown', onKey, { passive: false });
+
+      container.addEventListener('wheel', (e) => { e.preventDefault(); }, { passive: false });
+      container.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+    })();
+    
+    // Map routing & button wiring (outside carousel closure so it's callable globally)
+    (function () {
+      // geolocation cache
+      let lat1 = null, lng1 = null;
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          lat1 = pos.coords.latitude;
+          lng1 = pos.coords.longitude;
+        }, () => {
+          lat1 = null; lng1 = null;
+        });
+      }
+
+      function getRouteTo(lat, lng) {
+        // If we have user location, use origin; otherwise fallback to destination-only url
+        if (lat1 !== null && lng1 !== null) {
+          const url = `https://www.google.com/maps/dir/?api=1&origin=${lat1},${lng1}&destination=${lat},${lng}&travelmode=walking`;
+          window.open(url, '_blank');
+        } else {
+          const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+          window.open(url, '_blank');
+        }
+      }
+
+      // wire buttons
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.building-card .directions').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const card = e.target.closest('.building-card');
+            const lat = card.getAttribute('data-lat');
+            const lng = card.getAttribute('data-lng');
+            if (lat && lng) getRouteTo(lat, lng);
+          });
+        });
+      });
+
+      // expose to global scope if needed
+      window.getRoute = getRouteTo;
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Campus Navigation</title>
+  <style>
+    canvas { border: 2px solid black; }
+  </style>
+</head>
+<body>
+  <h2>Campus Navigation</h2>
+  <canvas id="map" width="600" height="400"></canvas>
+
+  <script>
+    // Floor plan image
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.src = "floorplan.jpg"; // your building plan image
+    
+    // Graph with coordinates
+    const graph = {
+      "Porch": { x: 50, y: 350, neighbors: ["Entrance"] },
+      "Entrance": { x: 150, y: 350, neighbors: ["Porch", "Corridor_Ground"] },
+      "Corridor_Ground": { x: 300, y: 350, neighbors: ["Entrance", "Stairs_Ground"] },
+      "Stairs_Ground": { x: 400, y: 300, neighbors: ["Corridor_Ground", "Stairs_1st"] },
+      "Stairs_1st": { x: 400, y: 250, neighbors: ["Stairs_Ground", "Stairs_2nd"] },
+      "Stairs_2nd": { x: 400, y: 200, neighbors: ["Stairs_1st", "Stairs_3rd"] },
+      "Stairs_3rd": { x: 400, y: 150, neighbors: ["Stairs_2nd", "Stairs_4th"] },
+      "Stairs_4th": { x: 400, y: 100, neighbors: ["Stairs_3rd", "Corridor_4th"] },
+      "Corridor_4th": { x: 300, y: 100, neighbors: ["Stairs_4th", "417"] },
+      "417": { x: 250, y: 80, neighbors: ["Corridor_4th"] }
+    };
+
+    // BFS shortest path
+    function shortestPath(graph, start, end) {
+      let queue = [[start]];
+      let visited = new Set([start]);
+      while (queue.length > 0) {
+        let path = queue.shift();
+        let node = path[path.length - 1];
+        if (node === end) return path;
+        for (let neighbor of graph[node].neighbors) {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push([...path, neighbor]);
+          }
+        }
+      }
+      return null;
+    }
+
+    function drawPath(path) {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // background
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "red";
+      ctx.beginPath();
+      for (let i = 0; i < path.length; i++) {
+        let node = graph[path[i]];
+        if (i === 0) ctx.moveTo(node.x, node.y);
+        else ctx.lineTo(node.x, node.y);
+      }
+      ctx.stroke();
+
+      // Mark nodes
+      ctx.fillStyle = "blue";
+      for (let point of path) {
+        let node = graph[point];
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    img.onload = () => {
+      let path = shortestPath(graph, "Porch", "417");
+      drawPath(path);
+    };
+  </script>
+</body>
+</html>

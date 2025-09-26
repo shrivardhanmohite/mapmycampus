@@ -1,0 +1,113 @@
+<header>
+  <style>
+    /* ===== NAVBAR BASE ===== */
+    .navbar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 3rem; /* bigger padding */
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(200, 200, 200, 0.3);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-20px);
+      animation: navbarFadeIn 0.8s forwards ease-out 0.3s; /* fade in + slide down */
+    }
+
+    @keyframes navbarFadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ===== LOGO / TITLE ===== */
+    .navbar .logo {
+      font-size: 2rem; /* bigger logo */
+      font-weight: 800;
+      background: linear-gradient(90deg, #92cc2fdb, #45dc9f);;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 1px;
+      transition: transform 0.3s ease;
+    }
+
+    .navbar .logo:hover {
+      transform: scale(1.05); /* slight zoom on hover */
+    }
+
+    /* ===== NAV LINKS ===== */
+    .navbar ul {
+      list-style: none;
+      display: flex;
+      gap: 2.5rem; /* more spacing between links */
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar a {
+      color: #2c3e50;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.2rem; /* bigger link font */
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    /* Underline hover animation */
+    .navbar a::after {
+      content: "";
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0%;
+      height: 3px; /* thicker underline */
+      background: linear-gradient(90deg, #b2db6ddb, #9ce6c8);;
+      transition: width 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .navbar a:hover {
+      color: #328339;
+    }
+
+    .navbar a:hover::after {
+      width: 100%;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 700px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 1.5rem;
+      }
+
+      .navbar ul {
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+
+      .navbar a {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+
+  <nav class="navbar">
+    <i class="fa-regular fa-compass"></i>
+    <div class="logo">Shivaji University Campus</div>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/viewmap">View Map</a></li>
+      <li><a href="#view-employee">View Employee</a></li>
+      <li><a href="/contact">Contact Us</a></li>
+      <!-- <li><a href="/about">About Us</a></li> -->
+    </ul>
+  </nav>
+</header>
